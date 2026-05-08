@@ -5,10 +5,10 @@ CYSE-130 Final Project | Spring 2026
 - Abdulrahman (Role 1 — Core Engine)
 - Rehan (Role 1 — Main / Game Loop)
 - Raki (Role 1 — State Management)
-- [Role 2 Student A name]
-- [Role 2 Student B name]
-- [Role 3 Student A name]
-- [Role 3 Student B name]
+- [Role 2 Nithin]
+- [Role 2 Nawaf]
+- [Role 3 Sami]
+- [Role 3 Bader]
 
 ## How to Run
 1. Make sure Python 3 is installed
