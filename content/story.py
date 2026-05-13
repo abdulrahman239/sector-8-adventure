@@ -91,7 +91,10 @@ SCENES = {
             {
                 "label": "1. Head to the loading bay exit",
                 "next_scene": "loading_bay",
-                "effect": lambda gs: gs["flags"].update({"has_keycard": True}),
+                "effect": lambda gs: (
+                    gs["flags"].update({"has_keycard": True}),
+                    gs["inventory"].append("Keycard") if "Keycard" not in gs["inventory"] else None,
+                ),
             },
         ],
     },
@@ -106,7 +109,10 @@ SCENES = {
             {
                 "label": "1. Run to the loading bay before she returns",
                 "next_scene": "loading_bay",
-                "effect": lambda gs: gs["flags"].update({"has_keycard": True}),
+                "effect": lambda gs: (
+                    gs["flags"].update({"has_keycard": True}),
+                    gs["inventory"].append("Keycard") if "Keycard" not in gs["inventory"] else None,
+                ),
             },
         ],
     },
@@ -122,7 +128,10 @@ SCENES = {
             {
                 "label": "1. Thank her and head to the loading bay",
                 "next_scene": "loading_bay",
-                "effect": lambda gs: gs["flags"].update({"has_keycard": True}),
+                "effect": lambda gs: (
+                    gs["flags"].update({"has_keycard": True}),
+                    gs["inventory"].append("Keycard") if "Keycard" not in gs["inventory"] else None,
+                ),
             },
         ],
     },
@@ -277,7 +286,6 @@ SCENES = {
                 "next_scene": "ending_maintenance",
                 "condition": lambda gs: "Vending Snacks" in gs["inventory"],
                 "challenge": "guard_dog",
-                "effect": lambda gs: gs["inventory"].remove("Vending Snacks"),
             },
             {
                 "label": "1. [You need something to distract the dog]",
@@ -303,13 +311,17 @@ SCENES = {
     "vending_machine": {
         "text": (
             "A cracked vending machine in the break room still has snacks.\n"
-            "You pry open the panel and grab a bag of chips."
+            "You pry open the panel and grab a bag of chips.\n"
+            "There's also a wall-mounted first aid box. You take the kit inside."
         ),
         "choices": [
             {
                 "label": "1. Head back to Lab C",
                 "next_scene": "maintenance_encounter",
-                "effect": lambda gs: gs["inventory"].append("Vending Snacks"),
+                "effect": lambda gs: (
+                    gs["inventory"].append("Vending Snacks") if "Vending Snacks" not in gs["inventory"] else None,
+                    gs["inventory"].append("First Aid Kit") if "First Aid Kit" not in gs["inventory"] else None,
+                ),
             },
         ],
     },
