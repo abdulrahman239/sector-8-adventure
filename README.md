@@ -1,4 +1,4 @@
-# Sector 8 — Text-Based Adventure Game
+# Group 8 — Text-Based Adventure Game
 CYSE-130 Final Project | Spring 2026
 
 ## Team Members
@@ -19,7 +19,7 @@ CYSE-130 Final Project | Spring 2026
 ## Story Paths
 1. **Find the Keycard** — Search the offices, interact with Guard Chen, collect a keycard and escape through the loading bay
 2. **Hack the Terminal** — Access the server room, solve the terminal password puzzle, disable alarms and escape through the checkpoint
-3. **Help the Scientist** — Follow cries for help, rescue Dr. Reyes, collect her items and escape through the maintenance tunnel
+3. **Help the Scientist** — Follow cries for help, rescue Dr. Reyes, collect her items, grab supplies from the vending machine, and escape through the maintenance tunnel
 
 ## Endings
 1. **The Clean Escape** — Escape through the loading bay using the keycard
@@ -27,35 +27,37 @@ CYSE-130 Final Project | Spring 2026
 3. **The Tunnel at Dawn** — Escape through the maintenance tunnel with Dr. Reyes after distracting the guard dog
 
 ## Locations / Events
-1. **Sector 7 Lobby** — Starting point, three paths available
+1. **Sector 8 Lobby** — Starting point, three paths available
 2. **Office Search** — Search for keycard, encounter Guard Chen
 3. **Server Room** — Terminal puzzle, interact with ARIA
 4. **East Corridor** — Find Dr. Reyes trapped under a shelf
-5. **Lab C / Maintenance Tunnel** — Guard dog encounter, escape route
+5. **Vending Machine / Break Room** — Pick up Vending Snacks and First Aid Kit
+6. **Lab C / Maintenance Tunnel** — Guard dog encounter, escape route
 
 ## NPCs
 | NPC | Location | Role |
 |-----|----------|------|
 | Guard Chen | Office Search | Gives keycard clue, can be bribed or talked to |
 | Dr. Reyes | East Corridor | Gives Emergency Badge and tunnel access code |
-| Janitor Ko | Vending Machine | Gives Vending Snacks to distract the dog |
+| Janitor Ko | Vending Machine | Optional dialogue about the dog and alarms |
 | ARIA | Server Room | Gives password format clue for terminal puzzle |
 | Radio Voice | Loading Bay | Optional story beat, hints about safe exits |
 
 ## Inventory Items
-| Item | Purpose |
-|------|---------|
-| Keycard | Unlocks the loading bay exit door |
-| Emergency Badge | Grants Level 2 emergency clearance |
-| Access Code 7-7-DELTA | Opens the maintenance tunnel door |
-| Vending Snacks | Distracts the guard dog at Lab C |
-| First Aid Kit | Restores 30 HP to the player |
+| Item | How to Get | Purpose |
+|------|------------|---------|
+| Keycard | Guard Chen (bribe, distract, or talk) | Unlocks the loading bay exit door |
+| Emergency Badge | Rescue Dr. Reyes | Grants Level 2 emergency clearance |
+| Access Code 7-7-DELTA | Rescue Dr. Reyes | Opens the maintenance tunnel door |
+| Vending Snacks | Vending Machine (break room) | Distracts the guard dog at Lab C |
+| First Aid Kit | Vending Machine (break room) | Restores up to 30 HP to the player |
 
 ## Challenges
 1. **Terminal Login** (Server Room)
    - Player must guess the correct password
    - Format clue: year facility opened + director initials
    - Correct answer: `2019MV`
+   - 3 attempts before lockout
    - Success: alarms disabled, checkpoint unlocked
    - Failure: player stays on scene and can retry
 
@@ -63,16 +65,17 @@ CYSE-130 Final Project | Spring 2026
    - Player must have Vending Snacks to auto-pass
    - Without snacks: forced to back away and find food
    - Success: dog distracted, tunnel accessible
-   - Failure: player sent to find snacks first
+   - Failure: player sent back to find snacks
 
 ## Cyber Pack
-- **Input Validation** — All menus use try/except to catch invalid input. Players are always re-prompted instead of the game crashing.
-- **Audit Logging** — All major events are written to `audit_log.txt` with timestamps including game start/end, choices made, challenge attempts, invalid inputs, and save/load attempts.
+- **Input Validation** — All menus use try/except to catch invalid input. Players are always re-prompted instead of the game crashing. Letters, numbers out of range, and empty input are all handled safely.
+- **Audit Logging** — All major events are written to `audit_log.txt` with timestamps. Logged events include: program start/end, game start/end, scene changes, choices made, NPC interactions, challenge attempts (success and failure), item use, save and load attempts, and every invalid input.
 - **Save/Load with Tamper Detection** — Game progress is saved to `savegame.json`. A SHA-256 hash of the save data is stored alongside it. When loading, the hash is recomputed and compared. If the file was edited, the load is rejected and the player is forced to start over.
 
 ## File Structure
 ```
 main.py
+README.md
 content/
     story.py
     npcs.py
@@ -85,5 +88,13 @@ systems/
 security/
     security.py
     save_load.py
-README.md
 ```
+
+## Action Menu (In-Game)
+At any scene, type `M` to open the action menu:
+1. View Inventory
+2. Use an Item
+3. Save Game
+4. Player Status
+5. Back to Game
+6. Quit Game
