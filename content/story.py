@@ -250,8 +250,8 @@ SCENES = {
                 "next_scene": "maintenance_encounter",
                 "effect": lambda gs: (
                     gs["flags"].update({"scientist_rescued": True}),
-                    gs["inventory"].append("Emergency Badge"),
-                    gs["inventory"].append("Access Code: 7-7-DELTA"),
+                    gs["inventory"].append("Emergency Badge") if "Emergency Badge" not in gs["inventory"] else None,
+                    gs["inventory"].append("Access Code: 7-7-DELTA") if "Access Code: 7-7-DELTA" not in gs["inventory"] else None,
                 ),
             },
         ],
