@@ -276,6 +276,7 @@ SCENES = {
                 "label": "1. Use the vending snacks to distract the dog",
                 "next_scene": "ending_maintenance",
                 "condition": lambda gs: "Vending Snacks" in gs["inventory"],
+                "challenge": "guard_dog",
                 "effect": lambda gs: gs["inventory"].remove("Vending Snacks"),
             },
             {
@@ -401,5 +402,3 @@ def apply_choice_effect(choice, game_state):
 def is_ending(scene):
     """Return True if this scene is a game-ending scene."""
     return "ending" in scene and len(scene["choices"]) == 0
-
-
