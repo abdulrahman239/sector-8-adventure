@@ -12,7 +12,7 @@ try:
     from systems.challenges import run_challenge
 except ImportError:
     def run_challenge(challenge_key, game_state):
-        print("\n  [Challenge system not connected yet - auto-passing]\n")
+        print("\n  [Challenge system not connected - auto-passing]\n")
         return True
 
 try:
@@ -25,11 +25,12 @@ try:
     from security.save_load import save_game
 except ImportError:
     def save_game(game_state):
-        print("\n  [Save system not connected yet]\n")
+        print("\n  [Save system not connected]\n")
 
 
 def _divider(char="=", width=52):
     print("\n" + char * width)
+
 
 def _print_scene(scene):
     _divider("=")
@@ -38,6 +39,7 @@ def _print_scene(scene):
     print()
     _divider("=")
 
+
 def _print_choices(choices):
     print()
     for choice in choices:
@@ -45,6 +47,7 @@ def _print_choices(choices):
     print()
     print("  M  -  Open Menu  (inventory / use item / save / status / quit)")
     print()
+
 
 def _action_menu(game_state):
     while True:
@@ -61,13 +64,14 @@ def _action_menu(game_state):
         print("  +==============================+")
         print()
         raw = input("  Enter a number (1-6): ").strip()
-        log_event("INPUT", detail=f"ActionMenu input='{raw}'")
+        log_event("INPUT", detail=f"ActionMenu='{raw}'")
         try:
             choice = int(raw)
         except ValueError:
-            log_event("INPUT_INVALID", detail=f"ActionMenu non-integer='{raw}'")
+            log_event("INPUT_INVALID", detail=f"ActionMenu non-int='{raw}'")
             print("\n  Invalid input. Please enter a number from 1 to 6.\n")
             continue
+
         if choice == 1:
             print()
             print(show_inventory(game_state["inventory"]))
@@ -75,7 +79,6 @@ def _action_menu(game_state):
             _use_item_menu(game_state)
         elif choice == 3:
             save_game(game_state)
-            log_event("SAVE_ATTEMPT", result="SUCCESS")
             print("\n  Game saved.\n")
         elif choice == 4:
             try:
@@ -85,9 +88,7 @@ def _action_menu(game_state):
                 print()
             except ImportError:
                 print(f"\n  Health : {game_state.get('health', 100)}/100")
-                print(f"  Scene  : {game_state.get('current_scene', '?')}")
-                inv = game_state.get("inventory", [])
-                print(f"  Items  : {', '.join(inv) if inv else '(empty)'}\n")
+                print(f"  Scene  : {game_state.get('current_scene', '?')}\n")
         elif choice == 5:
             return False
         elif choice == 6:
@@ -95,11 +96,11 @@ def _action_menu(game_state):
             if confirm == "Y":
                 log_event("GAME_END", detail="Player quit from action menu")
                 return True
-            else:
-                print("\n  Returning to menu.\n")
+            print("\n  Returning to menu.\n")
         else:
             log_event("INPUT_INVALID", detail=f"ActionMenu out-of-range='{raw}'")
             print("\n  Invalid choice. Please enter a number from 1 to 6.\n")
+
 
 def _use_item_menu(game_state):
     items = game_state["inventory"]
@@ -115,7 +116,7 @@ def _use_item_menu(game_state):
     try:
         idx = int(raw)
     except ValueError:
-        log_event("INPUT_INVALID", detail=f"UseItem non-integer='{raw}'")
+        log_event("INPUT_INVALID", detail=f"UseItem non-int='{raw}'")
         print("\n  Invalid input. Returning to menu.\n")
         return
     if idx == 0:
@@ -127,6 +128,7 @@ def _use_item_menu(game_state):
         log_event("ITEM_USED", detail=f"Item={item_name}")
     else:
         print("\n  No item with that number.\n")
+
 
 def _npc_menu(scene_key, game_state):
     npcs_here = get_npcs_in_scene(scene_key)
@@ -147,7 +149,7 @@ def _npc_menu(scene_key, game_state):
     try:
         idx = int(raw.replace("T", "")) - 1
     except ValueError:
-        log_event("INPUT_INVALID", detail=f"NPCMenu bad input='{raw}'")
+        log_event("INPUT_INVALID", detail=f"NPCMenu bad='{raw}'")
         print("\n  Invalid input - skipping.\n")
         return
     if 0 <= idx < len(npcs_here):
@@ -158,9 +160,10 @@ def _npc_menu(scene_key, game_state):
         print()
         print(run_npc_interaction(npc_key, game_state))
         print()
-        log_event("NPC_INTERACTION", detail=f"NPC={npc_key} scene={scene_key}")
+        log_event("NPC_INTERACTION", detail=f"NPC={npc_key}")
     else:
         print("\n  No one with that number.\n")
+
 
 def _get_player_choice(choices, scene_key, game_state):
     n = len(choices)
@@ -169,59 +172,67 @@ def _get_player_choice(choices, scene_key, game_state):
         raw = input(f"  Enter your choice (1-{n}): ").strip().upper()
         log_event("INPUT", detail=f"Scene={scene_key} input='{raw}'")
         if raw == "M":
-            quit_requested = _action_menu(game_state)
-            if quit_requested:
+            if _action_menu(game_state):
                 return None
             continue
         try:
             idx = int(raw) - 1
         except ValueError:
-            log_event("INPUT_INVALID", detail=f"Scene={scene_key} non-integer='{raw}'")
+            log_event("INPUT_INVALID", detail=f"Scene={scene_key} non-int='{raw}'")
             print(f"\n  Invalid input. Please enter a number from 1 to {n}, or M for Menu.\n")
             continue
         if 0 <= idx < n:
             selected = choices[idx]
             log_event("CHOICE_MADE", detail=f"Scene={scene_key} Choice='{selected['label'][:50]}'")
             return selected
-        else:
-            log_event("INPUT_INVALID", detail=f"Scene={scene_key} out-of-range='{raw}'")
-            print(f"\n  Invalid choice. Please enter a number from 1 to {n}.\n")
+        log_event("INPUT_INVALID", detail=f"Scene={scene_key} out-of-range='{raw}'")
+        print(f"\n  Invalid choice. Please enter a number from 1 to {n}.\n")
+
 
 def _handle_challenge(choice, game_state):
-    challenge_key = choice.get("challenge")
-    if not challenge_key:
+    key = choice.get("challenge")
+    if not key:
         return True
     print()
-    print(f"  -- CHALLENGE: {challenge_key} --")
-    log_event("CHALLENGE_ATTEMPT", detail=f"Puzzle={challenge_key}", result="START")
-    passed = run_challenge(challenge_key, game_state)
-    result_str = "SUCCESS" if passed else "FAIL"
-    log_event("CHALLENGE_ATTEMPT", detail=f"Puzzle={challenge_key}", result=result_str)
-    return passed
+    print(f"  -- CHALLENGE: {key} --")
+    return run_challenge(key, game_state)
+
 
 def run_scene(scene_key, game_state):
+    """
+    Run one full scene. Returns:
+        str  -- next scene key
+        None -- player quit
+        "end" -- reached ending
+    """
     try:
         scene = get_scene(scene_key)
     except KeyError:
         print(f"\n  [ERROR] Scene '{scene_key}' not found. Returning to start.\n")
-        log_event("ERROR", detail=f"Missing scene key='{scene_key}'")
+        log_event("ERROR", detail=f"Missing scene='{scene_key}'")
         return "start"
+
     _print_scene(scene)
     _npc_menu(scene_key, game_state)
+
     if is_ending(scene):
         log_event("GAME_END", detail=f"Ending={scene.get('ending', scene_key)}")
         input("\n  Press Enter to continue...\n")
         return "end"
+
     available = get_available_choices(scene, game_state)
     if not available:
         print("\n  [No available choices - returning to start]\n")
-        log_event("ERROR", detail=f"No available choices at scene='{scene_key}'")
+        log_event("ERROR", detail=f"No choices at='{scene_key}'")
         return "start"
+
     selected = _get_player_choice(available, scene_key, game_state)
     if selected is None:
         return None
+
     if not _handle_challenge(selected, game_state):
         print("\n  Challenge failed. Try again.\n")
         return scene_key
+
     apply_choice_effect(selected, game_state)
     return selected["next_scene"]
