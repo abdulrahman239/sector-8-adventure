@@ -204,5 +204,3 @@ NPCS = {
         "interaction": _interact_radio,
     },
 }
-
-
