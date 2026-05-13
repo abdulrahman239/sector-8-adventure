@@ -1,208 +1,158 @@
-# content/npcs.py
-# Role 2 - NPC definitions and interaction logic
-# Each NPC has dialogue and a run_interaction() function.
+# systems/inventory.py
+# Role 2 - Inventory system
+# Manages the player's item collection, viewing, and usage.
 
 # ─────────────────────────────────────────────
-# NPC REGISTRY
-# ─────────────────────────────────────────────
-# Each NPC dict contains:
-#   "name"        : str
-#   "location"    : str  (scene key where they appear)
-#   "description" : str  (shown when player first meets them)
-#   "interaction" : callable(game_state) -> str
-#                   Runs when the player talks to / encounters the NPC.
-#                   May modify game_state (flags, inventory).
-#                   Returns dialogue/outcome text.
-
 
 # ─────────────────────────────────────────────
-# NPC INTERACTION FUNCTIONS
+# USE EFFECT FUNCTIONS
 # ─────────────────────────────────────────────
-# Each function receives game_state (dict) and may:
-#   - Add items to game_state["inventory"]
-#   - Set flags in game_state["flags"]
-#   - Return multi-line dialogue strings
 
-def _interact_chen(game_state):
-    """
-    Guard Chen — gives a clue about the keycard location.
-    If the player has already bribed her, she gives a different response.
-    """
-    if game_state["flags"].get("guard_bribed"):
+def _use_keycard(game_state):
+    if game_state["current_scene"] == "loading_bay":
+        game_state["flags"]["has_keycard"] = True
+        return "You swipe the keycard. The reader flashes green. The door clicks open."
+    return "You hold up the keycard. There's nothing to use it on here."
+
+
+def _use_badge(game_state):
+    game_state["flags"]["badge_used"] = True
+    return (
+        "You flash the emergency badge at the scanner.\n"
+        "A light blinks. The system registers EMERGENCY CLEARANCE — LEVEL 2."
+    )
+
+
+def _use_access_code(game_state):
+    if game_state["current_scene"] in ("maintenance_encounter", "maintenance_stuck"):
+        game_state["flags"]["tunnel_code_used"] = True
         return (
-            "Chen glances at you and looks away.\n"
-            "'You didn't see me. I didn't see you. Move.'"
+            "You punch in 7-7-DELTA on the keypad.\n"
+            "The maintenance door grinds open."
         )
+    return "You read the code to yourself. You'll need to find the right keypad."
 
+
+def _use_snacks(game_state):
+    game_state["flags"]["dog_distracted"] = True
     return (
-        "Chen crosses her arms.\n"
-        "'I've worked here six years. Never seen anything like this.\n"
-        " Look — I can't let you leave without authorization, but...\n"
-        " the emergency keycard locker is in the east office. Third drawer.\n"
-        " Technically I didn't tell you that.'\n\n"
-        "[Clue obtained: keycard may be in the east office, third drawer]"
+        "You toss the chips across the room.\n"
+        "The guard dog lunges for them without a second glance at you."
     )
 
 
-def _interact_reyes(game_state):
-    """
-    Dr. Reyes — gives access code and badge if rescued, nothing if already helped.
-    """
-    if game_state["flags"].get("scientist_rescued"):
-        return (
-            "Dr. Reyes steadies herself against the wall.\n"
-            "'I'm okay. The tunnel is just past Lab C.\n"
-            " Watch out for the dog — it responds to food, not commands.'"
-        )
-
-    # First interaction — rescue and reward
-    game_state["flags"]["scientist_rescued"] = True
-    if "Emergency Badge" not in game_state["inventory"]:
-        game_state["inventory"].append("Emergency Badge")
-    if "Access Code: 7-7-DELTA" not in game_state["inventory"]:
-        game_state["inventory"].append("Access Code: 7-7-DELTA")
-
-    return (
-        "You heave the shelf aside. Dr. Reyes gasps with relief.\n"
-        "'You saved my life. Here — take my badge and the tunnel code.\n"
-        " 7-7-DELTA. There's a maintenance exit behind Lab C.\n"
-        " There's a guard dog. It's hungry. Find something to distract it.'\n\n"
-        "[Item added: Emergency Badge]\n"
-        "[Item added: Access Code: 7-7-DELTA]"
-    )
-
-
-def _interact_ko(game_state):
-    """
-    Janitor Ko — gives vending machine snacks and hints about the dog.
-    Unique interaction: he knows more than he lets on.
-    """
-    if "Vending Snacks" in game_state["inventory"]:
-        return (
-            "Ko mops the floor without looking up.\n"
-            "'You already got the chips. Don't waste them on yourself.'"
-        )
-
-    game_state["inventory"].append("Vending Snacks")
-
-    return (
-        "Ko looks at you with calm eyes.\n"
-        "'Every alarm in this building goes off twice a year for drills.\n"
-        " I don't worry anymore. Here — take these before the machine dies.\n"
-        " That dog near Lab C loves the BBQ flavor.'\n"
-        "He presses a bag of chips into your hand and keeps mopping.\n\n"
-        "[Item added: Vending Snacks]"
-    )
-
-
-def _interact_aria(game_state):
-    """
-    ARIA — the facility AI. Gives a clue about the terminal password
-    if the player asks. Won't unlock doors directly.
-    """
-    if game_state["flags"].get("terminal_hacked"):
-        return (
-            "ARIA: 'Access privileges confirmed. Please proceed to the designated exit.\n"
-            " Have a productive day.'"
-        )
-
-    return (
-        "ARIA: 'Hello. I am ARIA — Automated Research Intelligence Assistant.\n"
-        " I am unable to unlock facility exits without proper authorization.\n"
-        " However, I can confirm that our system passwords follow the format:\n"
-        " [YEAR_ESTABLISHED][DIRECTOR_INITIALS].\n"
-        " This information is publicly available on our website. Good luck.'\n\n"
-        "[Clue obtained: password format = year + director initials]"
-    )
-
-
-def _interact_radio(game_state):
-    """
-    Unknown Radio Contact — triggers an optional story beat.
-    Hints that someone on the outside is watching.
-    Changes a flag that could influence which ending text is shown.
-    """
-    game_state["flags"]["radio_contacted"] = True
-
-    return (
-        "Static. Then a voice:\n"
-        "'If you're hearing this, you're still inside. Good.\n"
-        " Don't use the main exit — they're watching it.\n"
-        " Loading bay or the maintenance tunnel. Your choice.\n"
-        " And... don't trust the logs. Someone's been editing them.'\n"
-        "The channel goes silent.\n\n"
-        "[Flag set: radio_contacted — may affect ending dialogue]"
-    )
+def _use_first_aid(game_state):
+    healed = min(30, 100 - game_state.get("health", 100))
+    game_state["health"] = game_state.get("health", 100) + healed
+    return f"You patch yourself up. +{healed} HP. (Health: {game_state['health']}/100)"
 
 
 # ─────────────────────────────────────────────
-# PUBLIC FUNCTIONS (called by the engine)
+# INVENTORY FUNCTIONS (called by the engine)
 # ─────────────────────────────────────────────
 
-def get_npc(npc_key):
-    """Return the NPC dict for npc_key."""
-    if npc_key not in NPCS:
-        raise KeyError(f"NPC '{npc_key}' not found.")
-    return NPCS[npc_key]
-
-
-def run_npc_interaction(npc_key, game_state):
+def add_item(inventory, item_name):
     """
-    Run the interaction function for an NPC.
-    Returns the dialogue/outcome string to display to the player.
+    Add item_name to the inventory list.
+    Prevents duplicates for non-stackable items.
+    Returns a result message string.
+    """
+    if item_name not in ITEMS:
+        return f"Unknown item: '{item_name}'"
+    if item_name in inventory:
+        return f"You already have: {item_name}"
+    inventory.append(item_name)
+    return f"[Item added: {item_name}]"
+
+
+def remove_item(inventory, item_name):
+    """
+    Remove item_name from the inventory list.
+    Returns a result message string.
+    """
+    if item_name not in inventory:
+        return f"You don't have: {item_name}"
+    inventory.remove(item_name)
+    return f"[Item removed: {item_name}]"
+
+
+def use_item(inventory, item_name, game_state):
+    """
+    Use an item from inventory.
+    Applies the item's effect and removes it if consumable.
+    Returns result text to display to the player.
 
     Example usage in engine:
-        result = run_npc_interaction("guard_chen", game_state)
+        result = use_item(game_state["inventory"], "First Aid Kit", game_state)
         print(result)
     """
-    npc = get_npc(npc_key)
-    return npc["interaction"](game_state)
+    if item_name not in inventory:
+        return f"You don't have '{item_name}' in your inventory."
+
+    if item_name not in ITEMS:
+        return f"'{item_name}' has no defined use."
+
+    item = ITEMS[item_name]
+    result = item["use_effect"](game_state)
+
+    if item["consumable"] and item_name in inventory:
+        inventory.remove(item_name)
+        result += f"\n[{item_name} was used up]"
+
+    return result
 
 
-def get_npcs_in_scene(scene_key):
+def show_inventory(inventory):
     """
-    Return a list of NPC keys present in a given scene.
-    Useful for the engine to know which NPCs to offer as interaction options.
+    Return a formatted string listing the player's current inventory.
+    Call this whenever the player chooses 'View Inventory'.
     """
-    return [key for key, npc in NPCS.items() if npc["location"] == scene_key]
+    if not inventory:
+        return "Your inventory is empty."
+
+    lines = ["── Inventory ──────────────────────"]
+    for i, item_name in enumerate(inventory, start=1):
+        desc = ITEMS.get(item_name, {}).get("description", "No description available.")
+        lines.append(f"  {i}. {item_name}")
+        lines.append(f"     {desc}")
+    lines.append("────────────────────────────────")
+    return "\n".join(lines)
 
 
-NPCS = {
+def get_item_names():
+    """Return a list of all possible item names in the game."""
+    return list(ITEMS.keys())
 
-    "guard_chen": {
-        "name": "Guard Chen",
-        "location": "office_search",
-        "description": "A tall security guard with a measured expression and a taser at her hip.",
-        "interaction": _interact_chen,
+# ITEM DEFINITIONS
+# ─────────────────────────────────────────────
+# Each item has a description and a use_effect.
+# use_effect(game_state) -> str: applies the item's effect, returns result text.
+# consumable: if True, item is removed from inventory after use.
+
+ITEMS = {
+    "Keycard": {
+        "description": "A standard facility access card. Unlocks the loading bay exit.",
+        "consumable": False,
+        "use_effect": _use_keycard,
     },
-
-    "dr_reyes": {
-        "name": "Dr. Reyes",
-        "location": "east_corridor",
-        "description": "A researcher in a torn lab coat, pinned under a collapsed shelf.",
-        "interaction": _interact_reyes,
+    "Emergency Badge": {
+        "description": "Dr. Reyes' emergency clearance badge. Grants limited access.",
+        "consumable": False,
+        "use_effect": _use_badge,
     },
-
-    "janitor_ko": {
-        "name": "Janitor Ko",
-        "location": "vending_machine",
-        "description": "An older man in coveralls who seems completely unbothered by the emergency.",
-        "interaction": _interact_ko,
+    "Access Code: 7-7-DELTA": {
+        "description": "A handwritten tunnel access code from Dr. Reyes.",
+        "consumable": False,
+        "use_effect": _use_access_code,
     },
-
-    "ai_terminal": {
-        "name": "ARIA (Automated Research Intelligence Assistant)",
-        "location": "server_room",
-        "description": "A synthetic voice coming from the server room terminal.",
-        "interaction": _interact_aria,
+    "Vending Snacks": {
+        "description": "A bag of BBQ chips. Dogs love these.",
+        "consumable": True,
+        "use_effect": _use_snacks,
     },
-
-    "radio_voice": {
-        "name": "Unknown Radio Contact",
-        "location": "loading_bay",
-        "description": "A crackling voice on an abandoned walkie-talkie near the loading dock.",
-        "interaction": _interact_radio,
+    "First Aid Kit": {
+        "description": "A basic med kit found in the break room. Restores 30 HP.",
+        "consumable": True,
+        "use_effect": _use_first_aid,
     },
 }
-
-
