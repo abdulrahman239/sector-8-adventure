@@ -37,7 +37,7 @@ SCENES = {
         "text": (
             "You wake up inside a locked research facility.\n"
             "Emergency lights flicker. An alarm loops in the distance.\n"
-            "A sign on the wall reads: SECTOR 7 — AUTHORIZED PERSONNEL ONLY.\n\n"
+            "A sign on the wall reads: SECTOR 8 — AUTHORIZED PERSONNEL ONLY.\n\n"
             "Three paths stretch before you."
         ),
         "choices": [
